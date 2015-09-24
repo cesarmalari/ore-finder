@@ -1,0 +1,16 @@
+[
+{
+  "modid": "orefinder",
+  "name": "Ore Finder",
+  "description": "Scans chunks and outputs data about ore concentrations by Y level.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["CesarMalari"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
