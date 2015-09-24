@@ -1,10 +1,19 @@
 package com.cesarmalari.orefinder;
 
+import java.io.File;
+import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.UUID;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+
+import cpw.mods.fml.relauncher.FMLInjectionData;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.command.ICommand;
@@ -45,14 +54,60 @@ public class FindOreCommand implements ICommand {
 	public void processCommand(ICommandSender sender, String[] args) {
 		World world = sender.getEntityWorld();
 		ChunkCoordinates startLocation = sender.getPlayerCoordinates();
-		
 		Chunk chunk = world.getChunkFromBlockCoords(startLocation.posX, startLocation.posZ);
-		HashMap<String,Integer>[] data = CollectData(chunk);
-		for(int y = 0; y < 256; y++) {
-			for(Entry<String, Integer> item : data[y].entrySet()){
-				System.out.printf("%d: %s: %d\n", y, item.getKey(), item.getValue());
-			}
+		
+		int range = 10;
+		if(args.length > 0) {
+			range = Integer.parseInt(args[0]);
 		}
+		
+		try{
+			File outFile = new File(getMinecraftDirectory().getAbsolutePath() + File.separator + "ores-" + UUID.randomUUID().toString() + ".json");
+			if(!outFile.createNewFile()) {
+				System.out.println("Cannot create output file: " + outFile.getAbsolutePath());
+				return;
+			}
+
+			HashMap<String, Integer>[] data = CreateData();
+			int numChunks = (range * 2 + 1) * (range * 2 + 1);
+			int count = 0;
+			System.out.printf("Scanning %d chunks at range %d\n", numChunks, range);
+			for(int x = chunk.xPosition - range; x <= chunk.xPosition + range; x++) {
+				for(int z = chunk.zPosition - range; z <= chunk.zPosition + range; z++) {
+					Chunk c = world.getChunkFromChunkCoords(x, z);
+					HashMap<String,Integer>[] d = CollectData(c);
+					Merge(data, d);
+					count++;
+					if(count % 250 == 0) {
+						System.out.printf("Scanned %d chunks of %d\n", count, numChunks);
+					}
+				}
+			}
+			
+			JsonObject output = new JsonObject();
+			for(int y = 0; y < 256; y++) {
+				for(Entry<String, Integer> item : data[y].entrySet()){
+					JsonObject prop = (JsonObject)output.get(item.getKey());
+					if(null == prop) {
+						prop = new JsonObject();
+						output.add(item.getKey(), prop);
+					}
+					prop.add(new Integer(y).toString(), new JsonPrimitive(item.getValue()));
+				}
+			}
+			
+			try(PrintWriter writer = new PrintWriter(outFile)) {
+				writer.write(output.toString());
+			}
+			System.out.println("JSON written to: " + outFile.getAbsolutePath());
+		}
+		catch(Exception ex) {
+			System.out.println(ex.toString());
+		}
+	}
+	
+	private File getMinecraftDirectory() {
+		return (File)FMLInjectionData.data()[6];
 	}
 	
 	private void Merge(HashMap<String, Integer>[] output, HashMap<String, Integer>[] input) throws Exception {
@@ -67,10 +122,7 @@ public class FindOreCommand implements ICommand {
 	}
 	
 	private HashMap<String, Integer>[] CollectData(Chunk chunk) {
-		HashMap<String, Integer>[] data = (HashMap<String, Integer>[])new HashMap[256];
-		for(int y = 0; y < 256; y++) {
-			data[y] = new HashMap<String, Integer>();
-		}
+		HashMap<String, Integer>[] data = CreateData();
 		for(int x=0; x < 16; x++) {
 			for(int z=0; z < 16; z++) {
 				for(int y = 0; y < 256; y++) {
@@ -82,6 +134,14 @@ public class FindOreCommand implements ICommand {
 					data[y].merge(name, 1, (oldValue, one) -> oldValue + one);
 				}
 			}
+		}
+		return data;
+	}
+	
+	private HashMap<String, Integer>[] CreateData() {
+		HashMap<String, Integer>[] data = (HashMap<String, Integer>[])new HashMap[256];
+		for(int y = 0; y < 256; y++) {
+			data[y] = new HashMap<String, Integer>();
 		}
 		return data;
 	}
