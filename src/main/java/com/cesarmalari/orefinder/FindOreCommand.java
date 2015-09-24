@@ -116,7 +116,8 @@ public class FindOreCommand implements ICommand {
 		}
 		for(int y = 0; y < 256; y++) {
 			for(Entry<String, Integer> item : input[y].entrySet()){
-				output[y].merge(item.getKey(), item.getValue(), (v1, v2) -> v1 + v2);
+				Integer oldValue = output[y].get(item.getKey());
+				output[y].put(item.getKey(), oldValue == null ? item.getValue() : oldValue + item.getValue());
 			}
 		}
 	}
@@ -131,7 +132,8 @@ public class FindOreCommand implements ICommand {
 						continue;
 					}
 					String name = block.getUnlocalizedName();
-					data[y].merge(name, 1, (oldValue, one) -> oldValue + one);
+					Integer oldValue = data[y].get(name);
+					data[y].put(name, oldValue == null ? 1 : oldValue + 1);
 				}
 			}
 		}
