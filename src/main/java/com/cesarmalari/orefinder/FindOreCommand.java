@@ -19,6 +19,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
@@ -64,14 +65,14 @@ public class FindOreCommand implements ICommand {
 		try{
 			File outFile = new File(getMinecraftDirectory().getAbsolutePath() + File.separator + "ores-" + UUID.randomUUID().toString() + ".json");
 			if(!outFile.createNewFile()) {
-				System.out.println("Cannot create output file: " + outFile.getAbsolutePath());
+				sendAndPrint(sender, String.format("Cannot create output file: %s", outFile.getAbsolutePath()));
 				return;
 			}
 
 			HashMap<String, Integer>[] data = CreateData();
 			int numChunks = (range * 2 + 1) * (range * 2 + 1);
 			int count = 0;
-			System.out.printf("Scanning %d chunks at range %d\n", numChunks, range);
+			sendAndPrint(sender, String.format("Scanning %d chunks at range %d", numChunks, range));
 			for(int x = chunk.xPosition - range; x <= chunk.xPosition + range; x++) {
 				for(int z = chunk.zPosition - range; z <= chunk.zPosition + range; z++) {
 					Chunk c = world.getChunkFromChunkCoords(x, z);
@@ -79,7 +80,7 @@ public class FindOreCommand implements ICommand {
 					Merge(data, d);
 					count++;
 					if(count % 250 == 0) {
-						System.out.printf("Scanned %d chunks of %d\n", count, numChunks);
+						sendAndPrint(sender, String.format("Scanned %d chunks of %d", count, numChunks));
 					}
 				}
 			}
@@ -99,11 +100,16 @@ public class FindOreCommand implements ICommand {
 			try(PrintWriter writer = new PrintWriter(outFile)) {
 				writer.write(output.toString());
 			}
-			System.out.println("JSON written to: " + outFile.getAbsolutePath());
+			sendAndPrint(sender, String.format("JSON written to: %s", outFile.getAbsolutePath()));
 		}
 		catch(Exception ex) {
-			System.out.println(ex.toString());
+			sendAndPrint(sender, ex.toString());
 		}
+	}
+	
+	private void sendAndPrint(ICommandSender sender, String message) {
+		sender.addChatMessage(new ChatComponentText(message));
+		System.out.println(message);
 	}
 	
 	private File getMinecraftDirectory() {
