@@ -19,6 +19,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.Item;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.world.World;
@@ -137,7 +138,8 @@ public class FindOreCommand implements ICommand {
 					if(block.getMaterial() == Material.air) {
 						continue;
 					}
-					String name = block.getUnlocalizedName();
+					int meta = chunk.getBlockMetadata(x, y, z);
+					String name = Block.blockRegistry.getNameForObject(block) + ":" + meta;
 					Integer oldValue = data[y].get(name);
 					data[y].put(name, oldValue == null ? 1 : oldValue + 1);
 				}
